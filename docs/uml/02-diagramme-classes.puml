@@ -1,0 +1,71 @@
+@startuml 02-diagramme-classes
+!theme plain
+skinparam backgroundColor white
+skinparam class {
+  BackgroundColor #FDFDF5
+  BorderColor #555555
+  ArrowColor #2E5B9F
+}
+title Diagramme de classes (modèle du domaine) — Système de billetterie
+
+enum StatutReservation {
+  CONFIRMEE
+  ANNULEE
+}
+
+enum StatutTicket {
+  VALIDE
+  UTILISE
+}
+
+class Participant {
+  - id : Long
+  - nom : String
+  - email : String
+}
+
+class Event {
+  - id : Long
+  - nom : String
+  - description : String
+  - dateHeure : LocalDateTime
+  - lieu : String
+  - capacite : int
+  - placesReservees : int
+  + placesRestantes() : int
+}
+
+class Reservation {
+  - id : Long
+  - dateReservation : LocalDateTime
+  - statut : StatutReservation
+}
+
+class Ticket {
+  - id : Long
+  - codeUnique : String <<UUID>>
+  - statut : StatutTicket
+  - dateValidation : LocalDateTime
+}
+
+Participant "1" -- "0..*" Reservation : effectue >
+Event "1" -- "0..*" Reservation : concerne <
+Reservation "1" -- "1" Ticket : donne lieu à >
+
+Reservation ..> StatutReservation
+Ticket ..> StatutTicket
+
+note right of Event::placesReservees
+  Compteur protégé contre la
+  concurrence (verrouillage) —
+  jamais de "placesRestantes"
+  stocké : calculé à la demande
+end note
+
+note bottom of Ticket
+  codeUnique : UUID généré par le
+  système, infalsifiable (NF2).
+  statut passe à UTILISE lors de
+  la validation le jour J (F5).
+end note
+@enduml

@@ -1,0 +1,32 @@
+@startuml 01-cas-utilisation
+!theme plain
+skinparam backgroundColor white
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #EEF5FF
+  BorderColor #2E5B9F
+}
+left to right direction
+title Diagramme de cas d'utilisation — Système de billetterie d'événements
+
+actor "Participant" as P
+actor "Organisateur\n(Administrateur)" as A
+
+rectangle "Système de billetterie" {
+  usecase "F2 : Consulter les événements\net places restantes" as UC2
+  usecase "F3 : Réserver une place" as UC3
+  usecase "F4 : Recevoir un billet\nà code unique" as UC4
+  usecase "F1 : Créer un événement" as UC1
+  usecase "F6 : Modifier / annuler\nun événement" as UC6
+  usecase "F7 : Consulter les réservations\nd'un événement" as UC7
+  usecase "F5 : Valider un billet\n(contrôle d'accès jour J)" as UC5
+}
+
+P --> UC2
+P --> UC3
+UC3 ..> UC4 : <<include>>\n(génération automatique)
+A --> UC1
+A --> UC6
+A --> UC7
+A --> UC5
+@enduml

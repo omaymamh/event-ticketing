@@ -1,0 +1,48 @@
+@startuml 03-sequence-reservation
+!theme plain
+skinparam backgroundColor white
+skinparam sequence {
+  ParticipantBackgroundColor #EEF5FF
+  LifeLineBorderColor #999999
+}
+title Diagramme de séquence — Réservation d'une place (cas nominal + refus)
+
+actor Participant as P
+participant "EventController\n(REST)" as C
+participant "ReservationService" as S
+participant "Repositories\n(JPA)" as R
+database "PostgreSQL" as DB
+
+P -> C : POST /api/events/{id}/reservations
+activate C
+C -> S : reserver(eventId, participant)
+activate S
+group Transaction [@Transactional]
+  S -> R : findById(eventId) **avec verrou**
+  activate R
+  R -> DB : SELECT ... FOR UPDATE
+  DB --> R : Event (ligne verrouillée)
+  R --> S : Event
+  deactivate R
+  alt places restantes > 0 et événement futur
+    S -> S : event.placesReservees++
+    S -> R : save(reservation + ticket UUID)
+    R -> DB : INSERT reservation, ticket\nUPDATE events
+    DB --> R : OK
+    S --> C : Reservation confirmée + Ticket
+    C --> P : 201 Created (code unique)
+  else événement complet
+    S --> C : ErreurMetier "complet"
+    C --> P : 409 Conflict (message explicite)
+  end
+end
+deactivate S
+deactivate C
+
+note over DB
+  Le verrou (SELECT FOR UPDATE) garantit NF1 :
+  deux demandes simultanées sur la dernière place
+  sont traitées l'une APRÈS l'autre —
+  exactement un gagnant, un refus.
+end note
+@enduml
