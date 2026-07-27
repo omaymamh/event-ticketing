@@ -2,6 +2,7 @@ package com.omayma.event_ticketing.controller;
 
 import com.omayma.event_ticketing.model.Event;
 import com.omayma.event_ticketing.service.EventService;
+import com.omayma.event_ticketing.dto.CreateEventRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,8 +17,9 @@ public class EventController {
     public EventController(EventService eventService){
         this.eventService =eventService;
     }
-    @PostMapping public ResponseEntity<Event> creer(@RequestBody Event event ){
-        Event cree =eventService.creerEvent(event);
+    @PostMapping
+    public ResponseEntity<Event> creer(@RequestBody CreateEventRequest request) {
+        Event cree = eventService.creerEvent(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(cree);
     }
     @GetMapping
