@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/events")
@@ -18,7 +19,7 @@ public class EventController {
         this.eventService =eventService;
     }
     @PostMapping
-    public ResponseEntity<Event> creer(@RequestBody CreateEventRequest request) {
+    public ResponseEntity<Event> creer(@Valid @RequestBody CreateEventRequest request) {
         Event cree = eventService.creerEvent(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(cree);
     }
