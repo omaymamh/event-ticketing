@@ -1,0 +1,27 @@
+package com.omayma.event_ticketing.controller;
+
+import com.omayma.event_ticketing.model.Event;
+import com.omayma.event_ticketing.service.EventService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/events")
+public class EventController {
+
+    private final EventService eventService;
+
+    public EventController(EventService eventService){
+        this.eventService =eventService;
+    }
+    @PostMapping public ResponseEntity<Event> creer(@RequestBody Event event ){
+        Event cree =eventService.creerEvent(event);
+        return ResponseEntity.status(HttpStatus.CREATED).body(cree);
+    }
+    @GetMapping
+    public List<Event> lister(){
+        return eventService.listerEvents();
+    }
+}
