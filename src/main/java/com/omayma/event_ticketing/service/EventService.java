@@ -1,6 +1,8 @@
 package com.omayma.event_ticketing.service;
 
 import com.omayma.event_ticketing.dto.CreateEventRequest;
+import com.omayma.event_ticketing.dto.UpdateEventRequest;
+import com.omayma.event_ticketing.exception.CapaciteInvalideException;
 import com.omayma.event_ticketing.exception.EventIntrouvableException;
 import com.omayma.event_ticketing.model.Event;
 import com.omayma.event_ticketing.repository.EventRepository;
@@ -28,6 +30,19 @@ public class EventService {
     public Event trouverParId(Long id ){
         return eventRepository.findById(id).orElseThrow(() -> new EventIntrouvableException(id));
 
+    }
+    public Event modifierEvent(Long id, UpdateEventRequest request){
+        Event event =trouverParId(id);
+
+        if (request.getCapacite() < event.getPlacesReservees()) {
+            throw new CapaciteInvalideException(request.getCapacite(), event.getPlacesReservees());
+        }
+        event.setNom(request.getNom());
+        event.setDescription(request.getDescription());
+        event.setDateHeure(request.getDateHeure());
+        event.setLieu(request.getLieu());
+        event.setCapacite(request.getCapacite());
+        return eventRepository.save(event);
     }
 
 }

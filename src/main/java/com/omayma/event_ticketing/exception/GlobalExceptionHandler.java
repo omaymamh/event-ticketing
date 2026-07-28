@@ -21,12 +21,20 @@ public class GlobalExceptionHandler {
         );
         return erreurs;
     }
+
     @ExceptionHandler(EventIntrouvableException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public Map<String, String> gererEventIntrouvable(EventIntrouvableException ex){
+    public Map<String, String> gererEventIntrouvable(EventIntrouvableException ex) {
         Map<String, String> erreur = new HashMap<>();
         erreur.put("erreur", ex.getMessage());
         return erreur;
-
+    }
+    @ExceptionHandler(CapaciteInvalideException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public Map<String, String> gererCapaciteInvalide(CapaciteInvalideException ex){
+        Map<String, String> erreur =new HashMap<>();
+        erreur.put("erreur", ex.getMessage());
+        return erreur;
     }
 }
+

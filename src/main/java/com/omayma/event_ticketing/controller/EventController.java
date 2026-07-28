@@ -1,5 +1,6 @@
 package com.omayma.event_ticketing.controller;
 
+import com.omayma.event_ticketing.dto.UpdateEventRequest;
 import com.omayma.event_ticketing.model.Event;
 import com.omayma.event_ticketing.service.EventService;
 import com.omayma.event_ticketing.dto.CreateEventRequest;
@@ -31,5 +32,11 @@ public class EventController {
     @GetMapping("/{id}")
     public Event Truver(@PathVariable Long id){
         return eventService.trouverParId(id);
+    }
+
+    @PutMapping("/{id}")
+    @ExceptionHandler()
+    public Event modifier(@PathVariable Long id, @Valid @RequestBody UpdateEventRequest request ){
+        return eventService.modifierEvent(id, request);
     }
 }
