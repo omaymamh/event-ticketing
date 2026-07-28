@@ -1,6 +1,7 @@
 package com.omayma.event_ticketing.service;
 
 import com.omayma.event_ticketing.dto.CreateEventRequest;
+import com.omayma.event_ticketing.exception.EventIntrouvableException;
 import com.omayma.event_ticketing.model.Event;
 import com.omayma.event_ticketing.repository.EventRepository;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,10 @@ public class EventService {
     }
     public List<Event> listerEvents(){
         return eventRepository.findAll();
+    }
+    public Event trouverParId(Long id ){
+        return eventRepository.findById(id).orElseThrow(() -> new EventIntrouvableException(id));
+
     }
 
 }

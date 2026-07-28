@@ -1,5 +1,6 @@
 package com.omayma.event_ticketing.exception;
 
+
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -19,5 +20,13 @@ public class GlobalExceptionHandler {
                 erreurs.put(erreur.getField(), erreur.getDefaultMessage())
         );
         return erreurs;
+    }
+    @ExceptionHandler(EventIntrouvableException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Map<String, String> gererEventIntrouvable(EventIntrouvableException ex){
+        Map<String, String> erreur = new HashMap<>();
+        erreur.put("erreur", ex.getMessage());
+        return erreur;
+
     }
 }

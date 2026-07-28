@@ -27,4 +27,9 @@ public class EventController {
     public List<Event> lister(){
         return eventService.listerEvents();
     }
+
+    @GetMapping("/{id}")
+    public Event Truver(@PathVariable Long id){
+        return eventService.trouverParId(id);
+    }
 }
