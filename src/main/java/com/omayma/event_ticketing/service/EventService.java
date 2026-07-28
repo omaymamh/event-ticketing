@@ -45,4 +45,9 @@ public class EventService {
         return eventRepository.save(event);
     }
 
+    public void supprimerEvent(Long id){
+        Event event =trouverParId(id);
+        eventRepository.delete(event);
+    }
+
 }

@@ -35,8 +35,13 @@ public class EventController {
     }
 
     @PutMapping("/{id}")
-    @ExceptionHandler()
     public Event modifier(@PathVariable Long id, @Valid @RequestBody UpdateEventRequest request ){
         return eventService.modifierEvent(id, request);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void supprimer (@PathVariable Long id){
+        eventService.supprimerEvent(id);
     }
 }
