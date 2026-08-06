@@ -1,10 +1,9 @@
 package com.omayma.event_ticketing.model;
 
 import jakarta.persistence.*;
-import lombok.Generated;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.Builder;
+import lombok.AllArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
@@ -12,7 +11,8 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
-
+@AllArgsConstructor
+@Builder
 public class Event {
     @Id
     @GeneratedValue(strategy= GenerationType.IDENTITY)

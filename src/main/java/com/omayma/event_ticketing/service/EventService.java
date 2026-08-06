@@ -8,7 +8,8 @@ import com.omayma.event_ticketing.model.Event;
 import com.omayma.event_ticketing.repository.EventRepository;
 import org.springframework.stereotype.Service;
 import java.util.List;
-
+import lombok.Builder;
+import lombok.AllArgsConstructor;
 @Service
 public class EventService {
     private final EventRepository eventRepository;
@@ -16,12 +17,13 @@ public class EventService {
         this.eventRepository = eventRepository;
     }
     public Event creerEvent(CreateEventRequest request){
-        Event event = new Event();
-        event.setNom(request.getNom());
-        event.setDescription(request.getDescription());
-        event.setDateHeure(request.getDateHeure());
-        event.setLieu(request.getLieu());
-        event.setCapacite(request.getCapacite());
+        Event event = Event.builder()
+                .nom(request.getNom())
+                .description(request.getDescription())
+                .dateHeure(request.getDateHeure())
+                .lieu(request.getLieu())
+                .capacite(request.getCapacite())
+                .build();
         return eventRepository.save(event);
     }
     public List<Event> listerEvents(){
