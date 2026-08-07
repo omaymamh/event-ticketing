@@ -2,54 +2,13 @@ package com.omayma.event_ticketing.service;
 
 import com.omayma.event_ticketing.dto.CreateEventRequest;
 import com.omayma.event_ticketing.dto.UpdateEventRequest;
-import com.omayma.event_ticketing.exception.CapaciteInvalideException;
-import com.omayma.event_ticketing.exception.EventIntrouvableException;
 import com.omayma.event_ticketing.model.Event;
-import com.omayma.event_ticketing.repository.EventRepository;
-import org.springframework.stereotype.Service;
 import java.util.List;
-import lombok.Builder;
-import lombok.AllArgsConstructor;
-@Service
-public class EventService {
-    private final EventRepository eventRepository;
-    public EventService(EventRepository eventRepository){
-        this.eventRepository = eventRepository;
-    }
-    public Event creerEvent(CreateEventRequest request){
-        Event event = Event.builder()
-                .nom(request.getNom())
-                .description(request.getDescription())
-                .dateHeure(request.getDateHeure())
-                .lieu(request.getLieu())
-                .capacite(request.getCapacite())
-                .build();
-        return eventRepository.save(event);
-    }
-    public List<Event> listerEvents(){
-        return eventRepository.findAll();
-    }
-    public Event trouverParId(Long id ){
-        return eventRepository.findById(id).orElseThrow(() -> new EventIntrouvableException(id));
 
-    }
-    public Event modifierEvent(Long id, UpdateEventRequest request){
-        Event event =trouverParId(id);
-
-        if (request.getCapacite() < event.getPlacesReservees()) {
-            throw new CapaciteInvalideException(request.getCapacite(), event.getPlacesReservees());
-        }
-        event.setNom(request.getNom());
-        event.setDescription(request.getDescription());
-        event.setDateHeure(request.getDateHeure());
-        event.setLieu(request.getLieu());
-        event.setCapacite(request.getCapacite());
-        return eventRepository.save(event);
-    }
-
-    public void supprimerEvent(Long id){
-        Event event =trouverParId(id);
-        eventRepository.delete(event);
-    }
-
+public interface EventService {
+    Event creerEvent(CreateEventRequest request);
+    List<Event> listerEvents();
+    Event trouverParId(Long id);
+    Event modifierEvent(Long id, UpdateEventRequest request);
+    void supprimerEvent(Long id);
 }
