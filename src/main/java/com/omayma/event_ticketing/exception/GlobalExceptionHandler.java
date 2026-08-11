@@ -36,5 +36,13 @@ public class GlobalExceptionHandler {
         erreur.put("erreur", ex.getMessage());
         return erreur;
     }
+
+    @ExceptionHandler(IdentifiantsInvalidesException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public Map<String, String> gererIdentifiantsInvalides(IdentifiantsInvalidesException ex) {
+        Map<String, String> erreur = new HashMap<>();
+        erreur.put("erreur", ex.getMessage());
+        return erreur;
+    }
 }
 
