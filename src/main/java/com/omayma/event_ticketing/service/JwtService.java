@@ -19,8 +19,9 @@ public class JwtService {
     @Value("${jwt.expiration}")
     private Long expiration;
 
-    private SecretKey getSigningKey(){
-        byte[] keyBytes = secret.getBytes();
+    private SecretKey getSigningKey() {
+        String secretLong = "6D5A7134743777217A25432A462D4A614E645267556B58703272357538782F4128472B4B6250655368566B597033733676397924";
+        byte[] keyBytes = secretLong.getBytes();
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
