@@ -54,6 +54,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/events/**").hasRole("ADMINISTRATEUR")
                         .requestMatchers(HttpMethod.PUT, "/api/events/**").hasRole("ADMINISTRATEUR")
                         .requestMatchers(HttpMethod.DELETE, "/api/events/**").hasRole("ADMINISTRATEUR")
+                        .requestMatchers(HttpMethod.POST, "/api/reservations/**").hasRole("PARTICIPANT")
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
