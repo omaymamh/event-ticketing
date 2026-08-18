@@ -44,5 +44,21 @@ public class GlobalExceptionHandler {
         erreur.put("erreur", ex.getMessage());
         return erreur;
     }
+
+    @ExceptionHandler(EvenementCompletException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public Map<String, String> gererEvenementComplet(EvenementCompletException ex) {
+        Map<String, String> erreur = new HashMap<>();
+        erreur.put("erreur", ex.getMessage());
+        return erreur;
+    }
+
+    @ExceptionHandler(EvenementPasseException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public Map<String, String> gererEvenementPasse(EvenementPasseException ex) {
+        Map<String, String> erreur = new HashMap<>();
+        erreur.put("erreur", ex.getMessage());
+        return erreur;
+    }
 }
 
