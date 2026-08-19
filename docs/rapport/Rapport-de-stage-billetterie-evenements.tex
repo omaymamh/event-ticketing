@@ -1,0 +1,353 @@
+\documentclass[12pt,a4paper]{report}
+
+% inputenc non requis avec xelatex
+\usepackage{fontspec}
+\setmainfont{DejaVu Serif}
+\setsansfont{DejaVu Sans}
+\setmonofont{DejaVu Sans Mono}
+% babel french et lmodern non disponibles dans cet environnement de compilation
+\renewcommand{\contentsname}{Sommaire}
+\renewcommand{\chaptername}{Chapitre}
+\renewcommand{\figurename}{Figure}
+\renewcommand{\tablename}{Tableau}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{colortbl}
+\usepackage{ragged2e}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage[hidelinks]{hyperref}
+
+\definecolor{bleuprincipal}{RGB}{31,56,100}
+\definecolor{bleusecondaire}{RGB}{46,91,159}
+\definecolor{grisfonce}{RGB}{85,85,85}
+\definecolor{codecolor}{RGB}{163,21,21}
+\definecolor{entetetable}{RGB}{46,91,159}
+
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{bleuprincipal}}
+  {\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{bleusecondaire}}
+  {\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{grisfonce}}
+  {\thesubsection}{1em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+\newcommand{\code}[1]{\textcolor{codecolor}{\texttt{#1}}}
+
+\begin{document}
+
+\begin{titlepage}
+\centering
+\vspace*{4cm}
+{\Huge\bfseries\color{bleuprincipal} Rapport de stage\par}
+\vspace{1cm}
+{\LARGE\bfseries\color{bleusecondaire} Système de billetterie d'événements\par}
+\vspace{0.5cm}
+{\Large\itshape\color{grisfonce} Backend Java / Spring Boot\par}
+\vspace{3cm}
+{\Large Réalisé par : Omayma Mharzi\par}
+\vspace{0.5cm}
+{\large\color{grisfonce} [Établissement / Encadrant à compléter]\par}
+\vspace{0.5cm}
+{\large Année 2026\par}
+\vfill
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\chapter{Chapitre 1 — Contexte général et cadrage du projet}
+
+\section{Introduction}
+
+Le présent chapitre pose les fondations du projet réalisé dans le cadre de ce stage : un \textbf{système de billetterie d'événements}. Il présente le contexte et la problématique adressée, identifie les acteurs du système, puis formalise les besoins fonctionnels et non fonctionnels auxquels la solution doit répondre. Ce cadrage constitue le référentiel du projet : chaque fonctionnalité développée par la suite répond à un besoin exprimé ici, et chaque besoin trouve sa réponse dans la solution livrée.
+
+\section{Contexte et problématique}
+
+La gestion des inscriptions à un événement à capacité limitée (conférence, concert, séminaire, compétition sportive) est une tâche critique pour tout organisateur. Gérée manuellement — par tableur, échanges téléphoniques ou messageries — elle expose l'organisateur à plusieurs risques concrets.
+
+\textbf{La survente (overbooking).} C'est le problème central du projet. Lorsque plusieurs demandes de réservation arrivent simultanément sur un événement presque complet, un système mal conçu peut accepter plus de réservations qu'il n'existe de places. Ce phénomène, appelé *condition de concurrence* (race condition), se produit typiquement lorsque deux utilisateurs tentent de réserver la dernière place au même instant : chacun consulte le nombre de places restantes (une place), chacun voit une place disponible, et les deux réservations sont acceptées — l'événement se retrouve en survente. Ce scénario, loin d'être théorique, est un problème classique des systèmes de vente en ligne à forte affluence.
+
+\textbf{L'unicité et l'authenticité des titres d'accès.} Une place doit être affectée à une et une seule personne. Le titre d'accès (billet) doit être infalsifiable : il ne doit être ni devinable, ni reproductible, ni utilisable plusieurs fois.
+
+\textbf{Le contrôle d'accès le jour de l'événement.} L'organisateur doit pouvoir vérifier rapidement et de manière fiable qu'une personne se présentant à l'entrée dispose d'une réservation valide, et détecter toute tentative de réutilisation d'un billet déjà consommé (billet photocopié ou transféré).
+
+\textbf{L'absence de visibilité en temps réel.} Sans système centralisé, l'organisateur ne dispose d'aucune vue fiable et instantanée sur le taux de remplissage de son événement, la liste des participants inscrits ou l'état des validations le jour J.
+
+La problématique du projet peut donc se formuler ainsi :
+
+\begin{quote}\itshape Comment concevoir un système de réservation garantissant qu'aucune place ne soit jamais vendue en excès — y compris en cas de demandes strictement simultanées — tout en assurant l'unicité, l'authenticité et la non-réutilisation des billets émis ?\end{quote}
+
+\section{Objectifs du projet}
+
+Le projet vise à développer une application web (API REST) permettant de :
+
+\begin{enumerate}
+\item Gérer le cycle de vie des événements (création, consultation, modification, annulation) ;
+\item Authentifier les utilisateurs et distinguer deux rôles aux droits différents (administrateur et participant) ;
+\item Permettre la réservation de places avec une garantie d'intégrité face à la concurrence ;
+\item Générer automatiquement des billets porteurs d'un code unique et infalsifiable ;
+\item Assurer le contrôle d'accès le jour de l'événement par validation des billets ;
+\item Offrir à l'organisateur un suivi des réservations.
+\end{enumerate}
+
+Au-delà du produit livré, le projet poursuit un objectif de qualité logicielle : architecture en couches, validation des données, gestion structurée des erreurs, tests automatisés (unitaires, intégration, et tests de concurrence), et documentation professionnelle. La démarche adoptée est incrémentale : une première version fonctionnelle et simple est livrée, puis enrichie progressivement pour couvrir les règles métier plus avancées.
+
+\section{Acteurs du système}
+
+Deux acteurs interagissent avec le système, avec des droits distincts, matérialisés par un mécanisme d'authentification.
+
+\textbf{L'organisateur (administrateur).} Il gère le cycle de vie des événements : création, modification, annulation. Il dispose d'une vue complète sur les réservations de ses événements (liste, taux de remplissage) et effectue le contrôle d'accès le jour J en validant les billets présentés.
+
+\textbf{Le participant.} Il consulte le catalogue des événements ouverts à la réservation ainsi que le nombre de places restantes, réserve une place et reçoit automatiquement un billet à code unique. Le jour de l'événement, il présente ce billet à l'entrée. Conformément au principe de confidentialité, le participant n'a pas accès à la liste nominative des autres inscrits.
+
+\section{Besoins fonctionnels}
+
+Les besoins fonctionnels sont exprimés sous la forme de récits utilisateur (*user stories*).
+
+\begin{center}\small
+\begin{longtable}{|p{7.50cm}|p{7.50cm}|}
+\hline
+\rowcolor{entetetable}
+\textbf{\textcolor{white}{Réf.}} & \textbf{\textcolor{white}{Récit utilisateur}} \\ \hline
+\textbf{F1} & En tant qu'organisateur, je veux créer un événement (nom, description, date, lieu, capacité) afin de le proposer à la réservation. \\ \hline
+\textbf{F2} & En tant que participant, je veux consulter la liste des événements avec le nombre de places restantes afin de choisir celui auquel participer. \\ \hline
+\textbf{F3} & En tant que participant, je veux réserver une place sur un événement afin de garantir mon accès. \\ \hline
+\textbf{F4} & En tant que participant, je veux recevoir automatiquement un billet porteur d'un code unique lors de ma réservation, afin de prouver mon droit d'accès le jour J. \\ \hline
+\textbf{F5} & En tant qu'organisateur, je veux valider un billet le jour de l'événement, afin de contrôler l'accès et d'empêcher qu'un même billet soit utilisé deux fois. \\ \hline
+\textbf{F6} & En tant qu'organisateur, je veux modifier ou annuler un événement, afin d'adapter mon offre aux imprévus. \\ \hline
+\textbf{F7} & En tant qu'organisateur, je veux consulter la liste des réservations d'un événement, afin de suivre son remplissage et de préparer le contrôle d'accès. \\ \hline
+\textbf{F8} & En tant qu'utilisateur, je veux m'authentifier afin d'accéder aux fonctionnalités correspondant à mon rôle (administrateur ou participant). \\ \hline
+\end{longtable}\end{center}
+
+\textbf{Règles métier associées.} Les besoins ci-dessus s'accompagnent de règles de gestion, notamment : une réservation n'est possible que sur un événement futur et non complet ; la génération du billet est automatique et indissociable de la réservation (F4) ; un billet validé passe définitivement à l'état " utilisé " (F5) ; la modification de la capacité d'un événement ne peut pas la réduire en dessous du nombre de réservations déjà confirmées (F6).
+
+\section{Besoins non fonctionnels}
+
+\begin{center}\small
+\begin{longtable}{|p{5.00cm}|p{5.00cm}|p{5.00cm}|}
+\hline
+\rowcolor{entetetable}
+\textbf{\textcolor{white}{Réf.}} & \textbf{\textcolor{white}{Exigence}} & \textbf{\textcolor{white}{Description}} \\ \hline
+\textbf{NF1} & \textbf{Intégrité (anti-survente)} & Le système ne doit jamais accepter plus de réservations que la capacité de l'événement, y compris lorsque des demandes arrivent simultanément. Face à deux demandes concurrentes sur la dernière place, exactement une doit réussir et l'autre doit être refusée avec un message explicite. Cette garantie s'appuie sur les mécanismes transactionnels et de verrouillage du SGBD. \\ \hline
+\textbf{NF2} & \textbf{Unicité et non-réutilisation des billets} & Chaque billet porte un code unique, généré aléatoirement et impossible à deviner (UUID). Un billet déjà validé ne peut pas être validé une seconde fois : toute nouvelle tentative est rejetée, afin d'empêcher la fraude par duplication ou partage de billet. \\ \hline
+\textbf{NF3} & \textbf{Validité des données} & Le système rejette toute donnée invalide avec un message d'erreur clair, notamment : une capacité nulle ou négative, une date d'événement située dans le passé, des champs obligatoires vides. \\ \hline
+\textbf{NF4} & \textbf{Sécurité des accès} & L'accès aux fonctionnalités est contrôlé par authentification ; chaque rôle (administrateur, participant) ne peut effectuer que les actions qui lui sont autorisées. Les données sensibles (mots de passe) ne sont jamais stockées en clair. \\ \hline
+\textbf{NF5} & \textbf{Traçabilité et testabilité} & Le comportement du système, en particulier la garantie NF1, doit être démontrable par des tests automatisés reproductibles, incluant des tests de concurrence simulant des réservations simultanées. \\ \hline
+\end{longtable}\end{center}
+
+\section{Environnement et choix techniques}
+
+Le projet est développé en \textbf{Java 21} avec le framework \textbf{Spring Boot 4.1} et l'outil de build \textbf{Maven}. La persistance des données repose sur \textbf{PostgreSQL 17}, choisi pour trois raisons : le modèle de données du projet est fortement relationnel (entités liées par des contraintes d'intégrité strictes) ; la garantie anti-survente (NF1) s'appuie sur ses mécanismes de transactions et de verrouillage de lignes, domaine où PostgreSQL fait référence ; enfin, le couple Spring Boot/PostgreSQL est un standard largement répandu en entreprise. Une base \textbf{H2} en mémoire est utilisée pour l'exécution des tests automatisés.
+
+Les principales bibliothèques employées sont : \textbf{Spring Web} (exposition de l'API REST), \textbf{Spring Data JPA} avec \textbf{Hibernate} (correspondance objet-relationnel), \textbf{Spring Validation} (contrôle des données entrantes), et \textbf{Lombok} (réduction du code répétitif). Le code est versionné avec \textbf{Git} (hébergement GitHub, convention *Conventional Commits*). L'environnement de développement est \textbf{IntelliJ IDEA}. Le déploiement final est prévu sur un serveur Linux, l'application étant exposée derrière un proxy NGINX, la base de données étant hébergée dans un conteneur Docker.
+
+\section{Planning prévisionnel}
+
+Le développement est organisé en phases itératives : (1) mise en place de l'environnement, cadrage et conception — phase achevée ; (2) module de gestion des événements (CRUD, validation, gestion d'erreurs) — phase achevée ; (3) module d'authentification (deux rôles) ; (4) module de réservation, dans une première version fonctionnelle simple ; (5) traitement de la concurrence — mise en évidence du problème puis mise en oeuvre de la solution ; (6) génération et validation des billets, campagne de tests ; (7) documentation, déploiement et livraison.
+
+\section{Conclusion du chapitre}
+
+Ce chapitre a permis de cerner la problématique — garantir l'intégrité des réservations face à la concurrence, tout en sécurisant les accès et l'authenticité des billets — et de la décliner en besoins vérifiables. Le chapitre suivant présente la conception de la solution : architecture logicielle, modélisation des données et choix de conception répondant à chacun des besoins exprimés.
+
+
+\chapter{Chapitre 2 — Conception de la solution}
+
+\section{Introduction}
+
+Le chapitre précédent a établi la problématique et l'a déclinée en besoins fonctionnels (F1 à F8) et non fonctionnels (NF1 à NF5). Le présent chapitre expose la conception de la solution : l'architecture logicielle retenue, la modélisation du domaine, et les scénarios dynamiques critiques. La démarche suivie est classique en génie logiciel : concevoir avant de coder, afin que chaque élément développé réponde à un besoin identifié et que les choix structurants soient argumentés.
+
+\section{Architecture générale}
+
+\subsection{Style architectural : API REST en couches}
+
+L'application est conçue comme une \textbf{API REST} : elle expose ses fonctionnalités sous forme de ressources accessibles par le protocole HTTP, en échangeant des données au format JSON. Ce style, standard de l'industrie, découple le serveur de ses futurs clients (application web, mobile, ou outil de scan des billets) et se prête naturellement aux tests automatisés exigés par le besoin NF5.
+
+En interne, l'application suit une \textbf{architecture en couches}, chaque couche ayant une responsabilité unique :
+
+\begin{center}\small
+\begin{longtable}{|p{5.00cm}|p{5.00cm}|p{5.00cm}|}
+\hline
+\rowcolor{entetetable}
+\textbf{\textcolor{white}{Couche}} & \textbf{\textcolor{white}{Rôle}} & \textbf{\textcolor{white}{Technologie}} \\ \hline
+\textbf{Controller} & Réception des requêtes HTTP, conversion JSON  vers  objets Java, codes de statut & Spring Web MVC \\ \hline
+\textbf{Service} & Logique métier : règles de gestion, décisions, orchestration & Spring (composants \code{@Service}) \\ \hline
+\textbf{Repository} & Accès aux données, requêtes vers la base & Spring Data JPA / Hibernate \\ \hline
+\textbf{Base de données} & Persistance, contraintes d'intégrité, transactions et verrouillage & PostgreSQL 17 \\ \hline
+\end{longtable}\end{center}
+
+Le flux d'une requête traverse les couches du haut vers le bas, les réponses remontant en sens inverse. Les dépendances sont unidirectionnelles : une couche ne connaît que celle immédiatement inférieure, et la base de données ne prend jamais l'initiative d'un échange (modèle client-serveur). Cette séparation garantit la testabilité — chaque couche pouvant être testée en isolant la couche inférieure — et la maintenabilité : une règle métier se trouve toujours dans la couche Service, jamais dispersée.
+
+L'assemblage des couches repose sur l'\textbf{injection de dépendances} du conteneur Spring : chaque composant déclare ses dépendances dans son constructeur, et le framework les lui fournit au démarrage. Aucun composant n'instancie lui-même ses collaborateurs, ce qui découple les couches et permet, lors des tests, de substituer une dépendance réelle par une doublure (*mock*).
+
+\subsection{Contrat d'API : le principe des DTO}
+
+L'API n'expose pas directement les entités de persistance. Chaque échange entrant passe par des \textbf{DTO} (*Data Transfer Objects*) : des objets dédiés définissant précisément ce que le client peut envoyer. Ce choix répond à un risque de sécurité concret : en acceptant l'entité brute en entrée, un client pourrait renseigner des champs qui ne relèvent pas de sa responsabilité — par exemple imposer une valeur initiale au compteur de places réservées, créant des réservations fictives et compromettant indirectement la garantie anti-survente (NF1). Le DTO d'entrée ne contient que les champs légitimes (nom, description, date, lieu, capacité), les champs sensibles (identifiant, compteur de réservations, statuts) restant sous le contrôle exclusif du serveur.
+
+La validation des valeurs (NF3) est portée par ces mêmes DTO au moyen des annotations Jakarta Validation : capacité strictement positive, date située dans le futur, champs obligatoires non vides. Une requête invalide est rejetée avant même d'atteindre la logique métier, et le système renvoie une réponse d'erreur structurée précisant chaque champ fautif.
+
+\subsection{Gestion centralisée des erreurs}
+
+Un gestionnaire d'exceptions global intercepte les erreurs survenant dans l'ensemble des contrôleurs et les traduit en réponses HTTP cohérentes : code 400 (données invalides), 404 (ressource introuvable), 409 (conflit avec l'état courant, par exemple une capacité réduite en dessous des réservations existantes). Ce mécanisme centralisé évite la dispersion du traitement des erreurs et garantit une expérience homogène pour le client de l'API.
+
+\section{Modélisation statique}
+
+\subsection{Diagramme de cas d'utilisation}
+
+\begin{center}\fbox{\textit{Emplacement figure 2.1 — Diagramme de cas d'utilisation — à insérer}}\end{center}
+
+Le diagramme de cas d'utilisation synthétise les besoins fonctionnels et leur répartition entre les deux acteurs. Le participant consulte le catalogue (F2) et réserve (F3) ; l'organisateur gère le cycle de vie des événements (F1, F6), suit les réservations (F7) et effectue le contrôle d'accès (F5). Les deux acteurs s'authentifient (F8). Un point de modélisation mérite d'être souligné : le cas " Recevoir un billet à code unique " (F4) n'est relié à aucun acteur par une association directe, mais au cas " Réserver une place " par une relation \code{<<include>>}. Cette relation exprime que la génération du billet est systématiquement incluse dans la réservation : elle est automatique, indissociable, et ne résulte d'aucune action manuelle.
+
+\subsection{Diagramme de classes du domaine}
+
+\begin{center}\fbox{\textit{Emplacement figure 2.2 — Diagramme de classes — à insérer}}\end{center}
+
+Le modèle du domaine comprend les entités \textbf{Utilisateur} (avec un rôle : administrateur ou participant), \textbf{Event}, \textbf{Reservation} et \textbf{Ticket}, complétées par des énumérations de statut. Les associations principales et leurs cardinalités sont les suivantes : un utilisateur effectue zéro ou plusieurs réservations, chaque réservation étant effectuée par exactement un utilisateur ; un événement est concerné par zéro ou plusieurs réservations, chaque réservation concernant exactement un événement ; enfin, une réservation donne lieu à exactement un ticket, et réciproquement.
+
+Trois décisions de conception structurent ce modèle :
+
+\textbf{Absence de redondance.} L'entité Event porte deux attributs numériques — \code{capacite} et \code{placesReservees} — et le nombre de places restantes n'est \textbf{pas} stocké : il est calculé à la demande (\code{capacite - placesReservees}). Stocker une donnée dérivable des autres créerait un risque d'incohérence. Ce principe s'applique à tout le modèle : le ticket ne duplique aucune information de l'événement (date, lieu) ; il y accède par navigation des associations (Ticket  vers  Reservation  vers  Event), de sorte qu'une modification de l'événement est immédiatement visible sans mise à jour en cascade.
+
+\textbf{Séparation Reservation / Ticket.} Bien que liées par une association 1–1, la réservation et le billet sont modélisés comme deux entités distinctes, car leurs cycles de vie diffèrent : la réservation naît de l'acte de réserver et peut être annulée (statuts CONFIRMEE / ANNULEE) ; le billet naît en conséquence de la réservation et évolue indépendamment le jour de l'événement (statuts VALIDE / UTILISE, horodatage de validation). Cette séparation des responsabilités facilite les évolutions futures (régénération d'un billet, ajout d'un QR code) sans impact sur la gestion des réservations.
+
+\textbf{Statuts par énumérations.} Les statuts sont modélisés par des types énumérés plutôt que par des chaînes de caractères libres : le compilateur et la base n'admettent ainsi qu'un ensemble fermé de valeurs, éliminant une classe entière d'erreurs.
+
+Enfin, l'attribut \code{codeUnique} du ticket est un \textbf{UUID} généré par le serveur : un identifiant aléatoire de 128 bits, statistiquement impossible à deviner, répondant à l'exigence d'infalsifiabilité du besoin NF2.
+
+\subsection{Sécurité et authentification}
+
+L'entité Utilisateur porte un identifiant, des informations de connexion et un rôle. Le mot de passe n'est jamais stocké en clair : il est conservé sous forme d'empreinte (hachage). L'authentification conditionne l'accès aux fonctionnalités selon le rôle : les opérations de gestion des événements et de validation des billets sont réservées à l'administrateur, tandis que la réservation est ouverte au participant. Conformément à la demande de conserver une première version simple, ce mécanisme reste volontairement minimal, sans complexité superflue, quitte à être enrichi ultérieurement.
+
+\section{Modélisation dynamique : le scénario de réservation}
+
+\begin{center}\fbox{\textit{Emplacement figure 2.3 — Diagramme de séquence de la réservation — à insérer}}\end{center}
+
+Le diagramme de séquence détaille le scénario le plus critique du système : la réservation d'une place, cas nominal et cas de refus. La requête du participant traverse les couches (Controller  vers  Service  vers  Repository  vers  PostgreSQL) ; le traitement métier est entièrement enveloppé dans une \textbf{transaction} : l'incrémentation du compteur, l'insertion de la réservation et celle du ticket forment un bloc indivisible — tout réussit, ou tout est annulé, excluant tout état intermédiaire incohérent.
+
+Le point décisif du scénario est la lecture de l'événement \textbf{avec verrouillage de ligne}. Ce verrou répond directement à la problématique centrale : lorsque deux demandes strictement simultanées visent la dernière place, la première à obtenir le verrou lit le compteur, l'incrémente et valide sa transaction ; la seconde, mise en attente par PostgreSQL, ne lit le compteur qu'après la libération du verrou — et trouve alors un événement complet. Les demandes simultanées sont ainsi \textbf{sérialisées} : exactement une réussit (réponse 201 avec le code du billet), l'autre est refusée proprement (réponse 409 accompagnée d'un message explicite), conformément au besoin NF1. La démonstration expérimentale de ce comportement — mise en évidence du défaut en l'absence de verrou, puis correction — fait l'objet du chapitre consacré aux tests. Conformément à la démarche incrémentale retenue, une première version simple de la réservation est développée d'abord, la gestion fine de la concurrence étant ajoutée dans un second temps.
+
+\section{Matrice de traçabilité besoins  vers  conception}
+
+\begin{center}\small
+\begin{longtable}{|p{7.50cm}|p{7.50cm}|}
+\hline
+\rowcolor{entetetable}
+\textbf{\textcolor{white}{Besoin}} & \textbf{\textcolor{white}{Élément de conception qui y répond}} \\ \hline
+F1, F6 & Ressource REST \code{/api/events} (CRUD) — couches Controller/Service \\ \hline
+F2 & Lecture des événements avec places restantes calculées (non stockées) \\ \hline
+F3 & Scénario de réservation transactionnel (§2.4) \\ \hline
+F4 & Relation \code{<<include>>} : génération automatique du ticket au sein de la transaction de réservation \\ \hline
+F5 & Entité Ticket : statut VALIDE  vers  UTILISE, horodatage de validation \\ \hline
+F7 & Association Event 1–0..* Reservation, consultée côté organisateur \\ \hline
+F8 & Entité Utilisateur avec rôle ; mécanisme d'authentification \\ \hline
+NF1 & Transaction + verrouillage de ligne, sérialisation des demandes concurrentes \\ \hline
+NF2 & \code{codeUnique} de type UUID généré par le serveur ; transition irréversible VALIDE  vers  UTILISE \\ \hline
+NF3 & DTO d'entrée + annotations Jakarta Validation + gestionnaire d'erreurs \\ \hline
+NF4 & Authentification, contrôle par rôle, mots de passe hachés \\ \hline
+NF5 & Architecture en couches testable ; injection de dépendances permettant les doublures de test \\ \hline
+\end{longtable}\end{center}
+
+Cette matrice vérifie la complétude de la conception : chaque besoin du chapitre 1 trouve sa réponse, et chaque élément conçu se justifie par un besoin.
+
+\section{Conclusion du chapitre}
+
+La conception présentée répond point par point au cahier des charges : une architecture en couches testable, un contrat d'API sécurisé par DTO et validation, une gestion centralisée des erreurs, un modèle de domaine sans redondance dont les cardinalités reflètent les règles métier, un contrôle des accès par authentification, et un scénario de réservation dont la robustesse face à la concurrence repose sur les mécanismes transactionnels du SGBD. Le chapitre suivant décrit la réalisation : mise en oeuvre des couches, du module de gestion des événements, de l'authentification, puis du module de réservation et du traitement de la concurrence.
+
+
+
+\chapter{Chapitre 3 — Réalisation}
+
+\section{Introduction}
+
+Ce chapitre décrit la réalisation de la première version fonctionnelle du système de billetterie. Conformément à la démarche incrémentale validée avec l'encadrant, cette version couvre les fonctionnalités essentielles — gestion des événements, authentification, réservation et génération de billets — dans une implémentation simple et fonctionnelle, la gestion avancée de la concurrence étant prévue comme évolution ultérieure. Le chapitre présente l'environnement de développement, l'architecture du code, puis chaque module réalisé, en illustrant les choix techniques par les mécanismes concrets mis en oeuvre.
+
+\section{Environnement de développement et de déploiement}
+
+Le développement s'effectue en \textbf{Java 21} avec \textbf{Spring Boot 4.1}, l'outil de build étant \textbf{Maven} (via le wrapper \code{mvnw}, garantissant une version reproductible). L'environnement de développement est \textbf{IntelliJ IDEA}.
+
+La persistance repose sur \textbf{PostgreSQL 17}, hébergé dans un conteneur \textbf{Docker} sur un serveur \textbf{Linux (Debian)} distant, accessible en SSH. Le code est développé sur poste local (Windows), versionné sur \textbf{GitHub} (dépôt \code{github.com/omaymamh/event-ticketing}) avec la convention *Conventional Commits*, puis synchronisé sur le serveur. Le déploiement final est prévu derrière un proxy \textbf{NGINX}, l'application devant être accessible via un sous-domaine dédié.
+
+Le mot de passe de la base de données est fourni par variable d'environnement (\code{DB\_PASSWORD} (variable d environnement)), afin de ne jamais figurer en clair dans le code versionné.
+
+\section{Architecture du code}
+
+Le projet suit une architecture en couches stricte, chaque couche ayant une responsabilité unique. L'organisation des packages reflète cette séparation :
+
+\begin{center}\small
+\begin{longtable}{|p{5.00cm}|p{5.00cm}|p{5.00cm}|}
+\hline
+\rowcolor{entetetable}
+\textbf{\textcolor{white}{Package}} & \textbf{\textcolor{white}{Contenu}} & \textbf{\textcolor{white}{Rôle}} \\ \hline
+\code{model} & Entités JPA et énumérations & Représentation des données \\ \hline
+\code{repository} & Interfaces Spring Data JPA & Accès aux données \\ \hline
+\code{service} & Interfaces + implémentations & Logique métier \\ \hline
+\code{controller} & Contrôleurs REST & Exposition HTTP \\ \hline
+\code{dto} & Objets de transfert & Contrat d'API en entrée \\ \hline
+\code{exception} & Exceptions métier + gestionnaire global & Traitement des erreurs \\ \hline
+\code{config} & Configuration de sécurité et filtres & Sécurité transversale \\ \hline
+\end{longtable}\end{center}
+
+Le flux d'une requête traverse ces couches du haut vers le bas (Controller  vers  Service  vers  Repository  vers  base), les réponses remontant en sens inverse. L'assemblage repose sur l'\textbf{injection de dépendances} : chaque composant déclare ses dépendances dans son constructeur, et Spring les fournit au démarrage.
+
+Deux principes de conception issus des recommandations d'encadrement ont été appliqués systématiquement : le \textbf{découplage par interfaces} (chaque service est défini par une interface \code{XxxService} implémentée par \code{XxxServiceImpl}, de sorte que les couches supérieures dépendent du contrat et non de l'implémentation concrète), et l'usage du \textbf{pattern Builder} (via Lombok \code{@Builder}) pour la construction lisible et sûre des entités.
+
+\section{Module de gestion des événements}
+
+Le module Événements implémente les opérations CRUD complètes sur la ressource \code{/api/events}.
+
+\textbf{L'entité Event} porte les attributs métier (nom, description, date-heure, lieu, capacité) ainsi que le compteur \code{placesReservees}. Conformément à la conception, le nombre de places restantes n'est pas stocké mais déduit (\code{capacite - placesReservees}), évitant toute redondance.
+
+\textbf{Le contrat d'API est protégé par des DTO.} Les opérations de création et de modification acceptent respectivement \code{CreateEventRequest} et \code{UpdateEventRequest}, qui ne contiennent que les champs légitimes. Ce choix a été motivé par un risque de sécurité identifié expérimentalement : en exposant l'entité brute, un client pouvait renseigner directement le compteur \code{placesReservees}, créant des réservations fictives. Le DTO, ne déclarant pas ce champ, rend l'injection impossible.
+
+\textbf{La validation des données (NF3)} est assurée par les annotations Jakarta Validation portées par les DTO : capacité strictement positive (\code{@Positive}), date située dans le futur (\code{@Future}), champs obligatoires non vides (\code{@NotBlank}). Une requête invalide est rejetée avant traitement, avec une réponse détaillant chaque champ fautif.
+
+\textbf{Une règle métier} encadre la modification : la capacité d'un événement ne peut être réduite en dessous du nombre de réservations déjà confirmées. Cette règle, validée par l'encadrant, est vérifiée dans la couche service et se traduit, en cas de violation, par une réponse 409 (Conflict).
+
+\textbf{La gestion des erreurs} est centralisée dans un \code{GlobalExceptionHandler} annoté \code{@RestControllerAdvice}, qui traduit chaque exception métier en réponse HTTP appropriée : 400 (données invalides), 404 (événement introuvable), 409 (conflit).
+
+\section{Module d'authentification}
+
+Le module d'authentification sécurise l'accès à l'API selon deux rôles : \textbf{administrateur} et \textbf{participant}.
+
+\textbf{L'entité User} porte l'email (identifiant de connexion, contraint unique en base), le mot de passe et le rôle (énumération \code{Role}). Le mot de passe n'est jamais stocké en clair : il est haché au moyen de l'algorithme \textbf{BCrypt} avant persistance, conformément au besoin NF4. Le hachage étant à sens unique, le mot de passe d'origine est irrécupérable, y compris en cas de fuite de la base.
+
+\textbf{L'inscription} (\code{POST /api/auth/register}) reçoit les informations de compte, hache le mot de passe et enregistre l'utilisateur. \textbf{La connexion} (\code{POST /api/auth/login}) vérifie les identifiants — la comparaison s'effectue entre l'empreinte du mot de passe saisi et l'empreinte stockée, sans jamais manipuler le mot de passe en clair — et délivre en cas de succès un \textbf{jeton JWT} (JSON Web Token) signé.
+
+\textbf{Le mécanisme JWT} repose sur trois composants. Le \code{JwtService} génère un token contenant l'identité de l'utilisateur et une date d'expiration, signé avec une clé secrète connue du seul serveur ; il vérifie également la validité d'un token présenté. Le \code{JwtAuthenticationFilter}, exécuté avant chaque requête, extrait le token de l'en-tête \code{Authorization}, en vérifie la signature et l'expiration, puis établit l'identité de l'utilisateur pour la durée de la requête. La classe \code{CustomUserDetailsService} fait le pont entre l'entité \code{User} et le modèle d'utilisateur de Spring Security.
+
+\textbf{La configuration de sécurité} (\code{SecurityConfig}) déclare les règles d'accès : les routes d'authentification et la consultation des événements sont publiques ; la création, modification et suppression d'événements sont réservées au rôle administrateur ; la réservation est réservée au rôle participant. Le serveur fonctionne en mode sans état (*stateless*), chaque requête étant authentifiée par son seul token, sans session serveur — approche standard pour une API REST. La signature garantit l'infalsifiabilité du token : toute modification de son contenu (par exemple pour s'attribuer un rôle supérieur) invalide la signature et entraîne le rejet.
+
+\section{Module de réservation}
+
+Le module de réservation constitue le coeur fonctionnel du système. Il met en relation les entités \code{User}, \code{Event}, \code{Reservation} et \code{Ticket}.
+
+\textbf{Les relations entre entités} sont matérialisées par des clés étrangères. Une \code{Reservation} référence l'utilisateur et l'événement concernés (relations \code{@ManyToOne} : plusieurs réservations pour un utilisateur, plusieurs réservations pour un événement). Un \code{Ticket} référence sa réservation (relation \code{@OneToOne} : une réservation donne lieu à exactement un billet). Ces contraintes d'intégrité sont garanties au niveau de la base : une réservation ne peut référencer un utilisateur ou un événement inexistant.
+
+\textbf{Le processus de réservation} (\code{POST /api/reservations}) orchestre plusieurs opérations. L'identité de l'utilisateur réservant est déduite du token présenté, non fournie par le client. Le service vérifie successivement que l'événement existe, qu'il n'est pas déjà passé, et qu'il reste des places disponibles ; en cas d'échec, une exception métier appropriée est levée (404, ou 409 pour un événement complet ou passé). Si les vérifications réussissent, le compteur \code{placesReservees} de l'événement est incrémenté, la réservation est créée avec le statut CONFIRMEE, et un billet est généré automatiquement.
+
+\textbf{La génération du billet} est indissociable de la réservation, conformément à la relation \code{<<include>>} du diagramme de cas d'utilisation. Le billet reçoit un \textbf{code unique de type UUID} (identifiant aléatoire de 128 bits), statistiquement impossible à deviner, répondant à l'exigence d'infalsifiabilité (NF2). Le billet naît avec le statut VALIDE.
+
+\textbf{La protection contre la survente}, dans cette première version, repose sur la vérification séquentielle du compteur de places avant incrémentation. Cette approche garantit qu'aucune survente ne se produit lorsque les demandes sont traitées les unes après les autres. Le traitement des demandes strictement simultanées — coeur de la problématique du projet — fait l'objet de l'évolution décrite au chapitre suivant.
+
+\section{Validation fonctionnelle}
+
+Chaque fonctionnalité a été validée par des tests manuels sur l'API, en vérifiant systématiquement les cas nominaux et les cas d'erreur. À titre d'exemples représentatifs : la création d'un événement à capacité négative est refusée (400) tandis qu'un événement valide est créé (201) ; la consultation d'un événement inexistant renvoie 404 ; une tentative de création d'événement par un participant est refusée (403) alors qu'un administrateur y parvient (201) ; une réservation sur un événement complet est refusée (409) tandis que le compteur de places n'excède jamais la capacité. Ces vérifications croisées — un cas qui doit réussir et un cas qui doit échouer — confirment que chaque garde fonctionne dans les deux sens.
+
+\section{Conclusion du chapitre}
+
+La première version du système est fonctionnelle et couvre l'ensemble du périmètre essentiel : authentification à deux rôles, gestion complète des événements, réservation avec génération de billets uniques, le tout structuré selon une architecture en couches testable et sécurisée. Le chapitre suivant traite de l'évolution majeure prévue : la gestion de la concurrence, afin de garantir l'intégrité des réservations face à des demandes simultanées.
+
+
+\end{document}
